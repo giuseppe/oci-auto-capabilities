@@ -135,6 +135,7 @@ if __name__ == '__main__':
     parser.add_argument('--sequential', default=False, dest='sequential', action='store_true', help='run only one instance of the container at a time')
     parser.add_argument('--test', default=None, dest='test', help='test to run inside the container to validate the configuration')
     parser.add_argument('--force', default=False, action='store_true', dest='force', help='overwrite the destination file')
+    parser.add_argument('--mount', action='append', dest='mount', help='specify additional mount points')
 
     args = parser.parse_args()
 
@@ -156,6 +157,11 @@ if __name__ == '__main__':
     src = os.path.realpath(os.path.join(os.getcwd(), args.test))
     conf['mounts'] = conf['mounts'] + [{'type' : 'bind', 'source' : src, 'destination' : '/usr/bin/test-script',
                                        'options': ['nosuid', 'nodev', 'mode=777']}]
+    for m in (args.mount or []):
+        source, destination = m.split(':')
+        conf['mounts'] = conf['mounts'] + [{'type' : 'bind', 'source' : source, 'destination' : destination,
+                                            'options': ['nosuid', 'nodev', 'mode=777']}]
+
     conf['process']['args'] = ['/usr/bin/test-script']
     max_workers = 1 if args.sequential else 4
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
